@@ -1,5 +1,6 @@
-import { Routes, Route, NavLink, Navigate, Link } from 'react-router-dom';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import TodoApp from './components/ToDoApp';
+import AuthPage from './components/AuthPage';
 import UserDirectory from './components/UserDirectory';
 import UserDetail from './components/UserDetail';
 import './App.css';
@@ -10,6 +11,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/todos" replace />} />
         <Route path="/todos" element={<TodoApp />} />
+        <Route path="/login" element={<AuthPage />} />
         <Route path="/users" element={<UserDirectory />} />
         <Route path="/users/:id" element={<UserDetail />} />
 
@@ -28,4 +30,4 @@ export default function App() {
       </Routes>
     </div>
   );
-}
+}
