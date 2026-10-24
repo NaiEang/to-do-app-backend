@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 
 const API = 'http://localhost:3000/api/todos';
+
 
 export function AddTodo({ onAdd, disabled }) {
   const [inputVal, setInputVal] = useState('');
@@ -128,11 +131,20 @@ export default function TodoApp() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const { user, token, logout } = useAuth();
+
+  const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  });
+
   async function fetchTodos() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API);
+      const res = await fetch(API, {
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) {
         throw new Error(`Failed to load todos (HTTP ${res.status})`);
       }
@@ -147,13 +159,13 @@ export default function TodoApp() {
 
   useEffect(() => {
     fetchTodos();
-  }, []);
+  }, [token]);
 
   async function handleAdd(title) {
     try {
       const res = await fetch(API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ title, status: 'TODO' }),
       });
       if (!res.ok) {
@@ -176,7 +188,7 @@ export default function TodoApp() {
     try {
       const res = await fetch(`${API}/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ status: nextStatus }),
       });
       if (!res.ok) {
@@ -198,6 +210,7 @@ export default function TodoApp() {
     try {
       const res = await fetch(`${API}/${id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         throw new Error(`Failed to delete task (HTTP ${res.status})`);
@@ -219,7 +232,10 @@ export default function TodoApp() {
     try {
       await Promise.all(
         completed.map((t) =>
-          fetch(`${API}/${t.id}`, { method: 'DELETE' }).then((res) => {
+          fetch(`${API}/${t.id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          }).then((res) => {
             if (!res.ok) throw new Error(`Failed to delete task #${t.id}`);
           })
         )
@@ -260,12 +276,54 @@ export default function TodoApp() {
             <span>{error ? 'Backend disconnected' : 'Connected to NestJS API'}</span>
           </div>
         </div>
-        {todos.length > 0 && (
-          <span className="todo-badge">
-            {completedCount} / {todos.length} done
-          </span>
-        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="todo-badge" style={{ backgroundColor: 'var(--code-bg)', color: 'var(--text-h)' }}>
+                👤 {user.username || user.email}
+              </span>
+              <button
+                type="button"
+                onClick={logout}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  color: 'var(--text)',
+                }}
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#fff',
+                background: 'var(--accent)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+              }}
+            >
+              Sign In
+            </Link>
+          )}
+
+          {todos.length > 0 && (
+            <span className="todo-badge">
+              {completedCount} / {todos.length} done
+            </span>
+          )}
+        </div>
       </header>
+
 
       {error && (
         <div className="todo-error-banner">
